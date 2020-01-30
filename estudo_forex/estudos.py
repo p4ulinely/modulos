@@ -1,6 +1,7 @@
 from datetime import datetime
 from matplotlib import pyplot as plt
 import statistics
+import csv
 
 today_time = datetime.now()
 file1 = open("/Users/paulinelymorgan/git/python/estudo_forex/data/DAT_MT_AUDUSD_M1_2018.csv", "r")
@@ -20,7 +21,6 @@ class Bar(object):
         self.bar_h = float(arr[3]) # high
         self.bar_l = float(arr[4]) # low
         self.bar_c = float(arr[5]) # close
-        
     
     def getDate(self):
         return self.bar_date
@@ -65,16 +65,17 @@ def getCorrelation(arr_x, arr_y):
     control = 0
 
     for arr1 in arr_x:
-        # control = 0
         while(True):
-            if (today_time - getFormattedDate(arr1)) > (today_time - getFormattedDate(arr_y[control])):
+            try:
+                if (today_time - getFormattedDate(arr1)) > (today_time - getFormattedDate(arr_y[control])):
+                    break
+                if arr1.getId() == arr_y[control].getId():
+                    axios_y.append(arr1.getClose()/arr_y[control].getClose())
+                    axios_x.append(arr1.getId())
+                    break
+                control += 1
+            except IndexError:
                 break
-
-            if arr1.getId() == arr_y[control].getId():
-                axios_y.append(arr1.getClose()/arr_y[control].getClose())
-                axios_x.append(arr1.getId())
-                break
-            control += 1
 
     return axios_x, axios_y
 
@@ -97,7 +98,6 @@ def correlationBetweenTwo(a, b):
         # diff2 maior ou diff2 = diff1
         return getCorrelation(b, a)
 
-
 bars_AUDUSD_M1_2018 = loadBars(data_AUDUSD_M1_2018)
 bars_EURUSD_M1_2018 = loadBars(data_EURUSD_M1_2018)
 x,y = correlationBetweenTwo(bars_AUDUSD_M1_2018, bars_EURUSD_M1_2018)
@@ -105,6 +105,13 @@ x,y = correlationBetweenTwo(bars_AUDUSD_M1_2018, bars_EURUSD_M1_2018)
 print("bars quantity: {}".format(len(y)))
 print("mean: {}".format(statistics.mean(y)))
 print("stdev: {}".format(statistics.stdev(y)))
+
+row_list = [[x[i], y[i]] for i,e in enumerate(x)]
+row_list.insert(0, ["id", "correlation"])
+
+with open('correlation.csv', 'w', newline='') as file:
+    writer = csv.writer(file)
+    writer.writerows(row_list)
 
 plt.plot(x, y)
 plt.xlabel("Bars: {}".format(len(y)))
